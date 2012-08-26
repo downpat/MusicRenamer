@@ -2,6 +2,8 @@ import os
 import sys
 import argparse
 import itertools
+import socket
+import time
 
 from pyechonest import track, config
 
@@ -49,14 +51,25 @@ if __name__ == "__main__":
 
     for filename in file_list:
         print "Opening file:", filename
-        ext = filename.split('.')[-1]
-        f = open(filename)
-        print "Getting track from Echo Nest..."
-        music = track.track_from_file(f, ext)
-        new_title = music.title.replace(' ', '')
-        new_filename = '%s/%s.%s' % (os.path.split(filename)[0], new_title, ext)
-        print "Renaming", filename, "to", new_filename
-        os.rename(filename, new_filename)
+        dir_path, file_name = os.path.split(filename)
+        if len(file_name) <= 8:
+            ext = filename.split('.')[-1]
+            f = open(filename)
+            print "Getting track from Echo Nest..."
+            try:
+                music = track.track_from_file(f, ext)
+            except socket.error, e:
+                print 'Socket Error:', e
+                print 'Sleeping...'
+                time.sleep(240)
+                print 'Continuing...'
+                continue
+            new_title = music.title.replace(' ', '')
+            new_filename = '%s/%s.%s' % (dir_path, new_title, ext)
+            print "Renaming", filename, "to", new_filename
+            os.rename(filename, new_filename)
+        else:
+            print "Track too long, doesn't need renamed."
 
  
 
