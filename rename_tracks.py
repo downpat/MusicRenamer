@@ -5,9 +5,9 @@ import itertools
 import socket
 import time
 
-from pyechonest import track, config
+from pyechonest import track, config, util as echo_util
 
-config.ECHO_NEST_API_KEY = "CSRT6DXFXKLRLWWVC"
+config.ECHO_NEST_API_KEY = ""
 
 
 def get_file_list(dir_list, dir_path):
@@ -61,13 +61,27 @@ if __name__ == "__main__":
             except socket.error, e:
                 print 'Socket Error:', e
                 print 'Sleeping...'
-                time.sleep(240)
+                time.sleep(60)
                 print 'Continuing...'
                 continue
-            new_title = music.title.replace(' ', '')
-            new_filename = '%s/%s.%s' % (dir_path, new_title, ext)
-            print "Renaming", filename, "to", new_filename
-            os.rename(filename, new_filename)
+            except echo_util.EchoNestAPIError, e:
+                print 'API Error:', e
+                print 'Sleeping...'
+                time.sleep(60)
+                print 'Continuing...'
+                continue
+            if hasattr(music, 'title'):
+                new_title = music.title.replace(' ', '')
+                new_filename = '%s/%s.%s' % (dir_path, new_title, ext)
+                print "Renaming", filename, "to", new_filename
+                try:
+                    os.rename(filename, new_filename)
+                except OSError, e:
+                    print "OSError:", e
+                    print "Filename:", filename
+                    print "New Filename:", new_filename
+            else:
+                print "Track does not have a title. Moving on..."
         else:
             print "Track too long, doesn't need renamed."
 
